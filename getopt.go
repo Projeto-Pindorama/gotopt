@@ -241,13 +241,17 @@ func (f *FlagSet) defaultUsage() {
 	f.PrintDefaults()
 }
 
+// actualFlag increments f.actual with a flag pointer.
+func (f *FlagSet) actualFlag(fg *flag.Flag) {
+	if f.actual == nil {
+		f.actual = make(map[string]*flag.Flag)
+	}
+	f.actual[fg.Name] = fg
+}
+
 // Parse parses the command-line flags from os.Args[1:].
 func Parse() {
 	CommandLine.Parse(os.Args[1:])
-}
-
-func (f *FlagSet) PrintActual() {
-	fmt.Println(f.actual)
 }
 
 // Parse parses flag definitions from the argument list,
@@ -280,6 +284,10 @@ func (f *FlagSet) Parse(args []string) error {
 					// TODO ErrHelp
 				}
 				return f.failf("flag provided but not defined: --%s", name)
+			} else {
+				// If the flag exists and it is
+				// set, it is an actual flag.
+				f.actualFlag(fg)
 			}
 			if b, ok := fg.Value.(boolFlag); ok && b.IsBoolFlag() {
 				if haveValue {
@@ -302,7 +310,6 @@ func (f *FlagSet) Parse(args []string) error {
 			if err := fg.Value.Set(value); err != nil {
 				return f.failf("invalid value %q for flag --%s: %v", value, name, err)
 			}
-			f.actual = append(f.actual, fg)
 			continue
 		}
 
@@ -320,6 +327,8 @@ func (f *FlagSet) Parse(args []string) error {
 					// TODO ErrHelp
 				}
 				return f.failf("flag provided but not defined: -%s", name)
+			} else {
+				f.actualFlag(fg)
 			}
 			if b, ok := fg.Value.(boolFlag); ok && b.IsBoolFlag() {
 				if err := fg.Value.Set("true"); err != nil {
@@ -336,7 +345,6 @@ func (f *FlagSet) Parse(args []string) error {
 			if err := fg.Value.Set(arg); err != nil {
 				return f.failf("invalid value %q for flag -%s: %v", arg, name, err)
 			}
-			f.actual = append(f.actual, fg)
 			break // consumed arg
 		}
 	}
@@ -344,6 +352,15 @@ func (f *FlagSet) Parse(args []string) error {
 	// Arrange for flag.NArg, flag.Args, etc to work properly.
 	f.FlagSet.Parse(append([]string{"--"}, args...))
 	return nil
+}
+
+func PrintActual() {
+	CommandLine.PrintActual()
+}
+
+func (f *FlagSet) PrintActual() {
+	fmt.Printf("%+v\n", f)
+	fmt.Printf("%+v\n", f.actual)
 }
 
 // PrintDefaults is like flag.PrintDefaults but includes information
