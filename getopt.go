@@ -42,7 +42,7 @@
 //
 // This package also defines a FlagSet wrapping the standard flag.FlagSet.
 //
-// Caveat
+// # Caveat
 //
 // In general Go flag parsing is preferred for new programs, because
 // it is not as pedantic about the number of dashes used to invoke
@@ -88,6 +88,7 @@ var CommandLine FlagSet
 type FlagSet struct {
 	*flag.FlagSet
 
+	actual        map[string]*flag.Flag
 	alias         map[string]string
 	unalias       map[string]string
 	name          string
@@ -245,6 +246,10 @@ func Parse() {
 	CommandLine.Parse(os.Args[1:])
 }
 
+func (f *FlagSet) PrintActual() {
+	fmt.Println(f.actual)
+}
+
 // Parse parses flag definitions from the argument list,
 // which should not include the command name.
 // Parse must be called after all flags and aliases in the FlagSet are defined
@@ -297,6 +302,7 @@ func (f *FlagSet) Parse(args []string) error {
 			if err := fg.Value.Set(value); err != nil {
 				return f.failf("invalid value %q for flag --%s: %v", value, name, err)
 			}
+			f.actual = append(f.actual, fg)
 			continue
 		}
 
@@ -330,6 +336,7 @@ func (f *FlagSet) Parse(args []string) error {
 			if err := fg.Value.Set(arg); err != nil {
 				return f.failf("invalid value %q for flag -%s: %v", arg, name, err)
 			}
+			f.actual = append(f.actual, fg)
 			break // consumed arg
 		}
 	}
