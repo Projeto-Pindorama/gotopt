@@ -243,10 +243,28 @@ func (f *FlagSet) defaultUsage() {
 
 // actualFlag increments f.actual with a flag pointer.
 func (f *FlagSet) actualFlag(fg *flag.Flag) {
+	// Initialize f.actual if nil.
 	if f.actual == nil {
 		f.actual = make(map[string]*flag.Flag)
 	}
 	f.actual[fg.Name] = fg
+}
+
+// Visit visits the flags in lexicographical order, calling fn for each.
+// It visits only those flags that have been set.
+func (f *FlagSet) Visit(fn func(*flag.Flag)) {
+	// Use flag.VisitAll() for the lexicographical sort.
+	flag.VisitAll(func(fg *flag.Flag) {
+		if ffg, ok := f.actual[fg.Name]; ok {
+			fn(ffg)
+		}
+	})
+}
+
+// Visit visits the command-line flags in lexicographical order, calling fn
+// for each. It visits only those flags that have been set.
+func Visit(fn func(*flag.Flag)) {
+	CommandLine.Visit(fn)
 }
 
 // Parse parses the command-line flags from os.Args[1:].
@@ -352,15 +370,6 @@ func (f *FlagSet) Parse(args []string) error {
 	// Arrange for flag.NArg, flag.Args, etc to work properly.
 	f.FlagSet.Parse(append([]string{"--"}, args...))
 	return nil
-}
-
-func PrintActual() {
-	CommandLine.PrintActual()
-}
-
-func (f *FlagSet) PrintActual() {
-	fmt.Printf("%+v\n", f)
-	fmt.Printf("%+v\n", f.actual)
 }
 
 // PrintDefaults is like flag.PrintDefaults but includes information
