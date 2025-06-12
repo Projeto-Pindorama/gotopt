@@ -155,28 +155,33 @@ func TestHelpText(t *testing.T) {
 func TestVisit(t *testing.T) {
 	tf := newTestFlagSet(t)
 	m := make(map[string]*flag.Flag)
+	// Do not set any flag.
+	desired := 0
 	visitor := func(f *flag.Flag) {
 		m[f.Name] = f
 	}
 	Visit(visitor)
-	if len(m) != 0 {
+	if len(m) != desired {
 		t.Errorf("Visit sees unset flags")
 		for k, v := range m {
 			t.Log(k, *v)
 		}
+		t.Errorf("have %d, want %d", len(m), desired)
 	}
 	// Reset m.
 	m = make(map[string]*flag.Flag)
 	// Now set four flags --- --india, -a, -b and -c.
+	desired = 4
 	tf.flag.Parse(strings.Fields((tests[1].cmd +
 		" " +
 		tests[5].cmd)))
 	tf.flag.Visit(visitor)
-	if len(m) != 4 {
+	if len(m) != desired {
 		t.Error("Visit fails after set")
 		for k, v := range m {
 			t.Log(k, *v)
 		}
+		t.Errorf("have %d, want %d", len(m), desired)
 	}
 	// Now test they're visited in sort order.
 	var flagNames []string
