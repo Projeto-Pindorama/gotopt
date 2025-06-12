@@ -254,7 +254,7 @@ func (f *FlagSet) actualFlag(fg *flag.Flag) {
 // It visits only those flags that have been set.
 func (f *FlagSet) Visit(fn func(*flag.Flag)) {
 	// Use flag.VisitAll() for the lexicographical sort.
-	flag.VisitAll(func(fg *flag.Flag) {
+	f.VisitAll(func(fg *flag.Flag) {
 		if ffg, ok := f.actual[fg.Name]; ok {
 			fn(ffg)
 		}
