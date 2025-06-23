@@ -1,8 +1,8 @@
-# rsc.io/getopt
+# pindorama.net.br/getopt
 
-[For full package documentation, see [https://godoc.org/rsc.io/getopt](https://godoc.org/rsc.io/getopt).]
+[For full package documentation, see [https://godoc.org/pindorama.net.br/getopt](https://godoc.org/pindorama.net.br/getopt).]
 
-    package getopt // import "rsc.io/getopt"
+    package getopt // import "pindorama.net.br/getopt"
 
 Package getopt parses command lines using [_getopt_(3)](http://man7.org/linux/man-pages/man3/getopt.3.html) syntax. It is a
 replacement for `flag.Parse` but still expects flags themselves to be defined
