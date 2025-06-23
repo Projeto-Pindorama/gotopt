@@ -1,0 +1,38 @@
+name: Go Test
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+
+  pull_request:
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Make go.mod file
+      run: printf >go.mod 'module pindorama.net.br/getopt\n\ngo 1.21\n'
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+ 
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      uses: robherley/go-test-action@v0
