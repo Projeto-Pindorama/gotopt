@@ -42,7 +42,7 @@
 //
 // This package also defines a FlagSet wrapping the standard flag.FlagSet.
 //
-// Caveat
+// # Caveat
 //
 // In general Go flag parsing is preferred for new programs, because
 // it is not as pedantic about the number of dashes used to invoke
@@ -88,6 +88,7 @@ var CommandLine FlagSet
 type FlagSet struct {
 	*flag.FlagSet
 
+	actual        map[string]*flag.Flag
 	alias         map[string]string
 	unalias       map[string]string
 	name          string
@@ -240,6 +241,32 @@ func (f *FlagSet) defaultUsage() {
 	f.PrintDefaults()
 }
 
+// actualFlag increments f.actual with a flag pointer.
+func (f *FlagSet) actualFlag(fg *flag.Flag) {
+	// Initialize f.actual if nil.
+	if f.actual == nil {
+		f.actual = make(map[string]*flag.Flag)
+	}
+	f.actual[fg.Name] = fg
+}
+
+// Visit visits the flags in lexicographical order, calling fn for each.
+// It visits only those flags that have been set.
+func (f *FlagSet) Visit(fn func(*flag.Flag)) {
+	// Use flag.VisitAll() for the lexicographical sort.
+	f.VisitAll(func(fg *flag.Flag) {
+		if ffg, ok := f.actual[fg.Name]; ok {
+			fn(ffg)
+		}
+	})
+}
+
+// Visit visits the command-line flags in lexicographical order, calling fn
+// for each. It visits only those flags that have been set.
+func Visit(fn func(*flag.Flag)) {
+	CommandLine.Visit(fn)
+}
+
 // Parse parses the command-line flags from os.Args[1:].
 func Parse() {
 	CommandLine.Parse(os.Args[1:])
@@ -275,6 +302,10 @@ func (f *FlagSet) Parse(args []string) error {
 					// TODO ErrHelp
 				}
 				return f.failf("flag provided but not defined: --%s", name)
+			} else {
+				// If the flag exists and it is
+				// set, it is an actual flag.
+				f.actualFlag(fg)
 			}
 			if b, ok := fg.Value.(boolFlag); ok && b.IsBoolFlag() {
 				if haveValue {
@@ -314,6 +345,8 @@ func (f *FlagSet) Parse(args []string) error {
 					// TODO ErrHelp
 				}
 				return f.failf("flag provided but not defined: -%s", name)
+			} else {
+				f.actualFlag(fg)
 			}
 			if b, ok := fg.Value.(boolFlag); ok && b.IsBoolFlag() {
 				if err := fg.Value.Set("true"); err != nil {

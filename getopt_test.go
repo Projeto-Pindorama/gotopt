@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -87,7 +88,9 @@ var tests = []struct {
 	{"-i 1", "-i 1"},
 	{"--india 1", "-i 1"},
 	{"--india=1", "-i 1"},
-	{"-i=1", `ERR: invalid value "=1" for flag -i: strconv.ParseInt: parsing "=1": invalid syntax`},
+	//	Different error message in go ≃ 1.24
+	//	{"-i=1", `ERR: invalid value "=1" for flag -i: strconv.ParseInt: parsing "=1": invalid syntax`},
+	{"-i=1", `ERR: invalid value "=1" for flag -i: parse error`},
 	{"--i=1", "-i 1"},
 	{"-abc", "-a -b -c"},
 	{"--abc", `ERR: flag provided but not defined: --abc`},
@@ -146,5 +149,47 @@ func TestHelpText(t *testing.T) {
 	out := tf.buf.String()
 	if out != wantHelpText {
 		t.Errorf("have<\n%s>\nwant<\n%s>", out, wantHelpText)
+	}
+}
+
+func TestVisit(t *testing.T) {
+	tf := newTestFlagSet(t)
+	m := make(map[string]*flag.Flag)
+	// Do not set any flag.
+	desired := 0
+	visitor := func(f *flag.Flag) {
+		m[f.Name] = f
+	}
+	Visit(visitor)
+	if len(m) != desired {
+		t.Errorf("Visit sees unset flags")
+		for k, v := range m {
+			t.Log(k, *v)
+		}
+		t.Errorf("have %d, want %d", len(m), desired)
+	}
+	// Reset m.
+	m = make(map[string]*flag.Flag)
+	// Now set four flags --- --india, -a, -b and -c.
+	desired = 4
+	tf.flag.Parse(strings.Fields((tests[1].cmd +
+		" " +
+		tests[5].cmd)))
+	tf.flag.Visit(visitor)
+	if len(m) != desired {
+		t.Error("Visit fails after set")
+		for k, v := range m {
+			t.Log(k, *v)
+		}
+		t.Errorf("have %d, want %d", len(m), desired)
+	}
+	// Now test they're visited in sort order.
+	var flagNames []string
+	visitor = func(f *flag.Flag) {
+		flagNames = append(flagNames, f.Name)
+	}
+	tf.flag.Visit(visitor)
+	if !slices.IsSorted(flagNames) {
+		t.Errorf("flag names not sorted: %v", flagNames)
 	}
 }
